@@ -38,11 +38,99 @@
 #include "audio/pcm/audio_pcm.h"
 #include "audio/manager/audio_manager.h"
 
+#include "net/wlan/wlan.h"
+#include "net/wlan/wlan_defs.h"
+#include "E:/GIT/xradio-skylark-sdk/project/common/framework/net_ctrl.h"
+#include "E:/GIT/xradio-skylark-sdk/project/common/framework/platform_init.h"
+#include "lwip/inet.h"
+#include "E:/GIT/xradio-skylark-sdk/project/common/cmd/cmd_defs.h"
+#include "E:/GIT/xradio-skylark-sdk/project/common/cmd/cmd_ping.h"
+#include "../include/net/lwip-1.4.1/lwip/sockets.h"
+
 #define PLAYER_THREAD_STACK_SIZE    (1024 * 4)
 
 static OS_Thread_t play_thread;
 static player_base *player;
 static int isCompleted = 0;
+
+char MusicBuff[1024];
+int MusicBuffLen;
+char PlayState = 0;
+int SocketHandle = 0U;
+char * sta_ssid = "hengxunchi169";
+char * sta_psk = "A2607169";
+
+void drv_play_pwr_en(unsigned char en);
+
+
+void sta_test(void)
+{
+    struct sockaddr_in saddr = {0};
+    int RecvResult = 0;
+    //char RecvBuff[1024] = {0};
+    
+	/* switch to sta mode */
+	net_switch_mode(WLAN_MODE_STA);
+
+	/* set ssid and password to wlan */
+	wlan_sta_set((uint8_t *)sta_ssid, strlen(sta_ssid), (uint8_t *)sta_psk);
+	
+	/* start scan and connect to ap automatically */
+	wlan_sta_enable();
+
+    printf("Try to ping www.baidu.com\n");
+    cmd_ping_exec("www.baidu.com");
+    OS_Sleep(10);
+    
+    /*start socket\n*/
+    SocketHandle = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    printf("start SocketHandle:%d\n", SocketHandle);
+    
+    saddr.sin_family		= AF_INET;
+    saddr.sin_port			= htons(6666);
+    saddr.sin_addr.s_addr	=  htonl(0xC0A8020A);//htonl(INADDR_LOOPBACK);
+    RecvResult = connect(SocketHandle, (struct sockaddr *)&saddr, sizeof(saddr));
+    printf("socketConnectResult:%d\n", RecvResult);
+
+#if 0
+    while (1)
+    {
+        RecvResult = recv(SocketHandle, RecvBuff, 1024, 0);
+
+        if (RecvResult > 0)
+        {
+            while (1)
+            {
+                if (0 == PlayState)
+                {
+                    MEMCPY(MusicBuff, RecvBuff, RecvResult);
+                    MusicBuffLen = RecvResult;
+                    PlayState = 2;
+                    printf("RecvSuccess:%d\n",RecvResult);
+                    break;
+                }
+            }
+            
+            RecvResult = send(SocketHandle, "ContinueSend", 12, 0);
+            
+            if (RecvResult > 0)
+            {
+                printf("SendSuccess:%d\n",RecvResult);
+            }
+            else
+            {
+                printf("SendFail:%d\n",RecvResult);
+                break;
+            }
+        }
+        else
+        {
+            printf("RecvBuffErr:%d\n",RecvResult);
+            break;
+        }
+    }
+#endif
+}
 
 static void player_demo_callback(player_events event, void *data, void *arg)
 {
@@ -155,7 +243,8 @@ static int play_fifo_music()
     void *file_buffer;
     unsigned int act_read;
     struct AudioFifoS *audiofifo;
-
+    int RecvResult;
+    
     /*
      * play media by putting media data to player
      * 1. only support mp3/amr/wav
@@ -171,7 +260,7 @@ static int play_fifo_music()
         goto err1;
     }
 
-    result = f_open(&fp, "music/1.mp3", FA_READ);
+    result = FR_OK;//f_open(&fp, "music/1.mp3", FA_READ);
     if (result != FR_OK) {
         ret = -1;
         goto err2;
@@ -179,11 +268,28 @@ static int play_fifo_music()
 
     AudioFifoSetPlayer(audiofifo, player);
     AudioFifoStart(audiofifo);
+    send(SocketHandle, "ContinueSend", 12, 0);
+    
     while (1) {
-        f_read(&fp, file_buffer, 1024, &act_read);
-        AudioFifoPutData(audiofifo, file_buffer, act_read);
+        //f_read(&fp, file_buffer, 1024, &act_read);
+        act_read = recv(SocketHandle, file_buffer, 1024, 0);
+        
+        if (act_read > 0)
+        {
+            AudioFifoPutData(audiofifo, file_buffer, act_read);
+            //OS_Sleep(1);
+            RecvResult = send(SocketHandle, "ContinueSend", 12, 0);
+            if (RecvResult > 0)
+            {
+                printf("SendSuccess\n");
+            }
+        }
+        
         if (act_read != 1024)
-            break;
+        {
+            //break;
+            ;
+        }
     }
     AudioFifoStop(audiofifo, false);
 
@@ -258,11 +364,11 @@ err1:
 
 static void play_task(void *arg)
 {
-    if (fs_ctrl_mount(FS_MNT_DEV_TYPE_SDCARD, 0) != 0) {
-        printf("mount fail\n");
-        goto exit;
-    }
-
+    //if (fs_ctrl_mount(FS_MNT_DEV_TYPE_SDCARD, 0) != 0) {
+        //printf("mount fail\n");
+        //goto exit;
+    //}
+    drv_play_pwr_en(1);
     player = player_create();
     if (player == NULL) {
         printf("player create fail.\n");
@@ -273,20 +379,20 @@ static void play_task(void *arg)
     printf("you can use it to play, pause, resume, set volume and so on.\n");
 
     printf("player set volume to 8. valid volume value is from 0~31\n");
-    player->setvol(player, 8);
+    player->setvol(player, 30);
 
     while (1) {
         printf("===try to play media in sd/tf card===\n");
-        play_file_music();
+        //play_file_music();
 
         printf("===try to play media in flash===\n");
-        play_flash_music();
+        //play_flash_music();
 
         printf("===try to play media by fifo===\n");
         play_fifo_music();
 
         printf("===try to play pcm by audio driver===\n");
-        play_pcm_music();
+        //play_pcm_music();
     }
 
     player_destroy(player);
@@ -297,6 +403,7 @@ exit:
 
 int audio_play_start()
 {
+    sta_test();
     if (OS_ThreadCreate(&play_thread,
                         "play_task",
                         play_task,
@@ -308,4 +415,24 @@ int audio_play_start()
     }
     return 0;
 }
+
+void drv_play_pwr_en(unsigned char en)
+{
+    GPIO_InitParam param;
+    param.driving = GPIO_DRIVING_LEVEL_1;
+    param.mode = GPIOx_Pn_F1_OUTPUT;
+    param.pull = GPIO_PULL_NONE;
+
+    HAL_GPIO_Init(GPIO_PORT_B, GPIO_PIN_16, &param);
+
+    if (en)
+    {
+        HAL_GPIO_WritePin(GPIO_PORT_B, GPIO_PIN_16, GPIO_PIN_LOW);
+    }
+    else
+    {
+        HAL_GPIO_WritePin(GPIO_PORT_B, GPIO_PIN_16, GPIO_PIN_HIGH);
+    }
+}
+
 

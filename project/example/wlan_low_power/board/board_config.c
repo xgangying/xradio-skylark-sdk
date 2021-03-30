@@ -68,8 +68,8 @@ static const GPIO_PinMuxParam g_pinmux_irtx[] = {
 
 __xip_rodata
 static const GPIO_PinMuxParam g_pinmux_i2c0[] = {
-	{ GPIO_PORT_A, GPIO_PIN_19,  { GPIOA_P19_F3_I2C0_SCL,   GPIO_DRIVING_LEVEL_1, GPIO_PULL_NONE } }, /* SCL */
-	{ GPIO_PORT_A, GPIO_PIN_20,  { GPIOA_P20_F3_I2C0_SDA,   GPIO_DRIVING_LEVEL_1, GPIO_PULL_NONE } }, /* SDA */
+	{ GPIO_PORT_A, GPIO_PIN_19,  { GPIOA_P19_F3_I2C0_SCL,   GPIO_DRIVING_LEVEL_1, GPIO_PULL_UP } }, /* SCL */
+	{ GPIO_PORT_A, GPIO_PIN_20,  { GPIOA_P20_F3_I2C0_SDA,   GPIO_DRIVING_LEVEL_1, GPIO_PULL_UP } }, /* SDA */
 };
 
 __xip_rodata

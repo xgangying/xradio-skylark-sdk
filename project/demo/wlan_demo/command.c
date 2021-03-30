@@ -31,6 +31,7 @@
 #include "common/cmd/cmd.h"
 #include "driver/chip/hal_prcm.h"
 #include "driver/chip/hal_gpio.h"
+#include "door_eye_protocol.h"
 
 enum cmd_status cmd_prcm_exec(char *cmd)
 {
@@ -209,5 +210,7 @@ static enum cmd_status cmd_main_help_exec(char *cmd)
 
 void main_cmd_exec(char *cmd)
 {
-	cmd_main_exec(cmd, g_main_cmds, cmd_nitems(g_main_cmds));
+    //printf("receive_data:%s\n", cmd);
+    analys_door_eye_protocol(cmd);
+	//cmd_main_exec(cmd, g_main_cmds, cmd_nitems(g_main_cmds));
 }

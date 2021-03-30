@@ -60,7 +60,7 @@ extern "C" {
 #define PRJCONF_CONSOLE_EN              0
 
 /* network and wlan enable/disable */
-#define PRJCONF_NET_EN                  0
+#define PRJCONF_NET_EN                  1
 
 #define PRJCONF_SYSINFO_SAVE_TO_FLASH	0
 

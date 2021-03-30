@@ -111,7 +111,7 @@ static void play_task(void *arg)
     config.rate = SAMPLE_RATE_OF_PLAY;
     player->control(player, PLAYER_CMD_SET_OUTPUT_CONFIG, &config);
 
-    player->setvol(player, 8);
+    player->setvol(player, 20);
 
     while (1) {
         play_file_music();

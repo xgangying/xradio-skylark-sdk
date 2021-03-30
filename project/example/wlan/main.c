@@ -34,16 +34,32 @@
 #include "common/framework/net_ctrl.h"
 #include "common/framework/platform_init.h"
 #include "lwip/inet.h"
+#include "common/cmd/cmd_defs.h"
+#include "common/cmd/cmd_ping.h"
+#include "../include/net/lwip-1.4.1/lwip/sockets.h"
+
+char MusicBuff[1024];
+int MusicBuffLen;
+char PlayState = 0;
 
 #define STA_MODE_TEST		1
-#define AP_MODE_TEST		1
-#define MON_MODE_TEST		1
+#define AP_MODE_TEST		0
+#define MON_MODE_TEST		0
+
+int SocketHandle = 0U;
 
 #if STA_MODE_TEST
-char * sta_ssid = "your_ap_name";
-char * sta_psk = "your_ap_password";
+char * sta_ssid = "hengxunchi169";
+char * sta_psk = "A2607169";
 void sta_test(void)
 {
+    //struct sockaddr stSockaddr = {0};
+    struct sockaddr_in saddr = {0};
+    int RecvResult = 0;
+    char RecvBuff[1024] = {0};
+    //char SendBuff[50] = {0};
+    //char SendCnt = 0;
+    
 	/* switch to sta mode */
 	net_switch_mode(WLAN_MODE_STA);
 
@@ -53,10 +69,70 @@ void sta_test(void)
 	/* start scan and connect to ap automatically */
 	wlan_sta_enable();
 
-	OS_Sleep(60);
+	//OS_Sleep(60);
 
 	/* After one minute, disconnect from AP */
-	wlan_sta_disable();
+	//wlan_sta_disable();
+
+    printf("Try to ping www.baidu.com\n");
+    cmd_ping_exec("www.baidu.com");
+    OS_Sleep(30);
+    /*start socket\n*/
+    SocketHandle = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    printf("start SocketHandle:%d\n", SocketHandle);
+    #if 0
+    stSockaddr.sa_len = 6;
+    stSockaddr.sa_family = AF_INET;
+    stSockaddr.sa_data[0] = 0xC2;
+    stSockaddr.sa_data[1] = 0x52;
+    stSockaddr.sa_data[2] = 192;
+    stSockaddr.sa_data[3] = 168;
+    stSockaddr.sa_data[4] = 2;
+    stSockaddr.sa_data[5] = 10;
+    #endif
+    
+    saddr.sin_family		= AF_INET;
+    saddr.sin_port			= htons(6666);
+    saddr.sin_addr.s_addr	= htonl(0xC0A8020A);//htonl(INADDR_LOOPBACK);
+    printf("socketConnectResult:%d\n", connect(SocketHandle, (struct sockaddr *)&saddr, 
+    sizeof(saddr)));
+
+    while (1)
+    {
+        RecvResult = recv(SocketHandle, RecvBuff, 1024, 0);
+
+        if (RecvResult > 0)
+        {
+            while (1)
+            {
+                if (0 == PlayState)
+                {
+                    MEMCPY(MusicBuff, RecvBuff, RecvResult);
+                    MusicBuffLen = RecvResult;
+                    PlayState = 2;
+                    printf("RecvSuccess:%d\n",RecvResult);
+                    break;
+                }
+            }
+            
+            RecvResult = send(SocketHandle, "ContinueSend", 12, 0);
+            
+            if (RecvResult > 0)
+            {
+                printf("SendSuccess:%d\n",RecvResult);
+            }
+            else
+            {
+                printf("SendFail:%d\n",RecvResult);
+                break;
+            }
+        }
+        else
+        {
+            printf("RecvBuffErr:%d\n",RecvResult);
+            break;
+        }
+    }
 }
 #endif
 

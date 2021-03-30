@@ -73,8 +73,10 @@
 #endif
 
 #define GC0308_SCCB_ID			0x21 //GC0308 ID
-#define GC0308_CHIP_ID			0x9b
+#define GC0308_CHIP_ID			0x54
 #define GC0308_IIC_CLK_FREQ		100000
+
+void drv_camera_pwr_en(unsigned char en);
 
 typedef struct {
 	uint8_t i2c_id;
@@ -401,6 +403,13 @@ void GC0308_SetPixelOutFmt(SENSOR_PixelOutFmt pixel_out_fmt)
     case RGB565:
         GC0308_WriteSccb(0x24, 0xa6);
         break;
+    
+    case RAW_RGB_CISCTRL:
+    {
+        GC0308_LOGE("GC0308:test pixel out fmt %d\n", pixel_out_fmt);
+    }
+    break;
+    
     default:
         GC0308_LOGE("GC0308:untest pixel out fmt %d\n", pixel_out_fmt);
         break;
@@ -414,6 +423,27 @@ void GC0308_SetPixelOutFmt(SENSOR_PixelOutFmt pixel_out_fmt)
   */
 static void GC0308_InitPower(SENSOR_PowerCtrlCfg *cfg)
 {
+#if 1
+    GPIO_InitParam param;
+    param.driving = GPIO_DRIVING_LEVEL_1;
+    param.mode = GPIOx_Pn_F1_OUTPUT;
+    param.pull = GPIO_PULL_NONE;
+
+    HAL_GPIO_Init(cfg->Pwdn_Port, cfg->Pwdn_Pin, &param);
+    HAL_GPIO_Init(cfg->Reset_Port, cfg->Reset_Pin, &param);
+
+    drv_camera_pwr_en(0);
+    OS_MSleep(10);
+    HAL_GPIO_WritePin(cfg->Pwdn_Port, cfg->Pwdn_Pin, GPIO_PIN_HIGH);
+    HAL_GPIO_WritePin(cfg->Reset_Port, cfg->Reset_Pin, GPIO_PIN_LOW);
+    OS_MSleep(10);
+    drv_camera_pwr_en(1);
+    OS_MSleep(100);
+    HAL_GPIO_WritePin(cfg->Pwdn_Port, cfg->Pwdn_Pin, GPIO_PIN_LOW);
+    OS_MSleep(50);
+    HAL_GPIO_WritePin(cfg->Reset_Port, cfg->Reset_Pin, GPIO_PIN_HIGH);
+    OS_MSleep(200);
+#else
     GPIO_InitParam param;
     param.driving = GPIO_DRIVING_LEVEL_1;
     param.mode = GPIOx_Pn_F1_OUTPUT;
@@ -427,6 +457,7 @@ static void GC0308_InitPower(SENSOR_PowerCtrlCfg *cfg)
     OS_MSleep(3);
     HAL_GPIO_WritePin(cfg->Reset_Port, cfg->Reset_Pin, GPIO_PIN_HIGH);
     OS_MSleep(100);
+#endif
 }
 
 static void GC0308_DeInitPower(SENSOR_PowerCtrlCfg *cfg)
@@ -443,14 +474,14 @@ static HAL_Status GC0308_Init(void)
     uint8_t chip_id;
     uint16_t i = 0;
 
-    GC0308_WriteSccb(0XFE, 0x80);
-    OS_MSleep(100);
+    //GC0308_WriteSccb(0XFE, 0x80);
+    //OS_MSleep(100);
 
-    GC0308_WriteSccb(0XFE, 0x00);
-    OS_MSleep(100);
+    //GC0308_WriteSccb(0XFE, 0x00);
+    //OS_MSleep(100);
 
-    if (GC0308_ReadSccb(0x00, &chip_id) != 1) {
-        GC0308_LOGE("GC0308 sccb read error\n");
+    if (GC0308_ReadSccb(0xF1, &chip_id) != 1) {
+        GC0308_LOGE("GC0308 sccb read error here1\n");
         return HAL_ERROR;
     } else {
 	    if(chip_id!= GC0308_CHIP_ID) {
@@ -465,7 +496,7 @@ static HAL_Status GC0308_Init(void)
 
     for (i = 0; i < sizeof(gc0308_init_reg_tbl) / sizeof(gc0308_init_reg_tbl[0]); i++) {
         if (!GC0308_WriteSccb(gc0308_init_reg_tbl[i][0], gc0308_init_reg_tbl[i][1])) {
-            GC0308_LOGE("GC0308 sccb read error\n");
+            GC0308_LOGE("GC0308 sccb read error here2\n");
             return HAL_ERROR;
         }
     }
@@ -623,3 +654,23 @@ void HAL_GC0308_Resume(void)
 	GC0308_WriteSccb(0x1a, analog_mode1);
 	GC0308_WriteSccb(0x25, output_en);
 }
+
+void drv_camera_pwr_en(unsigned char en)
+{
+    GPIO_InitParam param;
+    param.driving = GPIO_DRIVING_LEVEL_1;
+    param.mode = GPIOx_Pn_F1_OUTPUT;
+    param.pull = GPIO_PULL_NONE;
+
+    HAL_GPIO_Init(GPIO_PORT_A, GPIO_PIN_21, &param);
+
+    if (en)
+    {
+        HAL_GPIO_WritePin(GPIO_PORT_A, GPIO_PIN_21, GPIO_PIN_HIGH);
+    }
+    else
+    {
+        HAL_GPIO_WritePin(GPIO_PORT_A, GPIO_PIN_21, GPIO_PIN_LOW);
+    }
+}
+
