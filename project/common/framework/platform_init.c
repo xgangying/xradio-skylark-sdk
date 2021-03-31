@@ -52,7 +52,7 @@
 #endif
 #if PRJCONF_CONSOLE_EN
 #include "console/console.h"
-#include "command.h"
+//#include "command.h"
 #endif
 #if (PRJCONF_CE_EN && PRJCONF_PRNG_INIT_SEED) || (PRJCONF_NET_EN)
 #include "efpg/efpg.h"
@@ -79,6 +79,9 @@
 #if (__CONFIG_CHIP_ARCH_VER == 2)
 #include "driver/chip/hal_trng.h"
 #endif
+
+#include "door_eye_protocol.h"
+
 
 #define PLATFORM_SHOW_DEBUG_INFO	0	/* for internal debug only */
 
@@ -628,7 +631,7 @@ __weak void platform_init_level1(void)
 #if PRJCONF_CONSOLE_EN
 	console_param_t cparam;
 	cparam.uart_id = BOARD_MAIN_UART_ID;
-	cparam.cmd_exec = main_cmd_exec;
+	cparam.cmd_exec = analys_door_eye_protocol;
 	cparam.stack_size = PRJCONF_CONSOLE_STACK_SIZE;
 	console_start(&cparam);
 #endif

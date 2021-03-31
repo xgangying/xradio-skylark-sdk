@@ -46,6 +46,7 @@
 #include "E:/GIT/xradio-skylark-sdk/project/common/cmd/cmd_defs.h"
 #include "E:/GIT/xradio-skylark-sdk/project/common/cmd/cmd_ping.h"
 #include "../include/net/lwip-1.4.1/lwip/sockets.h"
+#include "door_eye_protocol.h"
 
 #define PLAYER_THREAD_STACK_SIZE    (1024 * 4)
 
@@ -434,5 +435,6 @@ void drv_play_pwr_en(unsigned char en)
         HAL_GPIO_WritePin(GPIO_PORT_B, GPIO_PIN_16, GPIO_PIN_HIGH);
     }
 }
+
 
 

@@ -57,7 +57,7 @@ extern "C" {
 #define PRJCONF_AC107_SOUNDCARD_EN		0
 
 /* console enable/disable */
-#define PRJCONF_CONSOLE_EN              0
+#define PRJCONF_CONSOLE_EN              1
 
 /* network and wlan enable/disable */
 #define PRJCONF_NET_EN                  1

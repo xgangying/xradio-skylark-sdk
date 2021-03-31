@@ -1,0 +1,6 @@
+---- CONSOLE_INVALID_BUF_IDX Matches (5 in 1 files) ----
+console.c (src\console) line 84 : #define CONSOLE_INVALID_BUF_IDX         CONSOLE_CMD_LINE_BUF_NUM
+console_get_valid_buf_idx in console.c (src\console) : 	return CONSOLE_INVALID_BUF_IDX;
+console_rx_callback in console.c (src\console) : 	if (console->rx_buf_idx != CONSOLE_INVALID_BUF_IDX) {
+console_task in console.c (src\console) : 		if (cmd_buf_idx != CONSOLE_INVALID_BUF_IDX) {
+console_task in console.c (src\console) : 			if (console->rx_buf_idx == CONSOLE_INVALID_BUF_IDX) {
